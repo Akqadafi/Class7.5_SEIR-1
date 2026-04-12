@@ -107,3 +107,45 @@ resource "google_compute_global_forwarding_rule" "http" {
 }
 
 
+resource "google_compute_security_policy" "waf" {
+  count = var.enable_waf ? 1 : 0
+
+  name = "${var.name}-policy"
+
+  rule {
+    priority = 1000
+    action   = "allow"
+
+    match {
+      versioned_expr = "SRC_IPS_V1"
+
+      config {
+        src_ip_ranges = var.allowed_ips
+      }
+    }
+  }
+
+  rule {
+    priority = 2000
+    action   = "deny(403)"
+
+    match {
+      expr {
+        expression = "evaluatePreconfiguredExpr('sqli-v33-stable')"
+      }
+    }
+  }
+
+  rule {
+    priority = 2147483647
+    action   = "allow"
+
+    match {
+      versioned_expr = "SRC_IPS_V1"
+
+      config {
+        src_ip_ranges = ["*"]
+      }
+    }
+  }
+}
